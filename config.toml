@@ -1,0 +1,121 @@
+# =============================================================================
+# config.toml — NDI → WHIP bridge configuration
+#
+# All values shown are defaults. Override only what you need.
+# Restart the service after editing: systemctl restart ndi-to-whip
+# =============================================================================
+
+# ── NDI source ────────────────────────────────────────────────────────────────
+[ndi]
+
+# Exact name of the NDI source as reported by the sender.
+# Discover available names: python ndi_to_whip.py --probe
+# Common formats:
+#   "COMPUTERNAME (channel name)"
+#   "192.168.1.50 (NDI Source)"
+source_name = "MYCOMPUTER (Stream 1)"
+
+# Milliseconds to wait for the NDI source to appear on startup.
+# Increase for sources that take longer to register on the network.
+connect_timeout_ms = 15000
+
+
+# ── WHIP endpoint ─────────────────────────────────────────────────────────────
+[whip]
+
+# WHIP ingest URL provided by your media server or CDN.
+# Examples:
+#   Cloudflare Stream: "https://customer-<id>.cloudflarestream.com/<key>/webRTC/publish"
+#   LiveKit:           "https://your-livekit-host/whip"
+#   Janus (local):     "http://127.0.0.1:8088/janus/whip"
+#   MediaMTX (local):  "http://127.0.0.1:8889/mystream/whip"
+url = "https://your-whip-endpoint/whip"
+
+# Bearer token for WHIP Authorization header.
+# Leave empty ("") if no authentication is required.
+auth_token = ""
+
+# STUN server URI — required for ICE candidate gathering.
+# Replace with your own if Google STUN is unreachable from your network.
+stun_server = "stun://stun.l.google.com:19302"
+
+# TURN server URI — optional, needed if direct UDP is blocked.
+# Format: "turn://username:password@hostname:port"
+turn_server = ""
+
+
+# ── Video ─────────────────────────────────────────────────────────────────────
+[video]
+
+# Output resolution.  Must match or be smaller than the NDI source.
+# Common values: 1920x1080, 1280x720, 854x480
+width  = 1920
+height = 1080
+
+# Output frame rate (integer fps).
+framerate = 30
+
+# H.264 bitrate in kilobits per second.
+# Rough guidance:
+#   720p@30fps:   2000–4000 kbps
+#   1080p@30fps:  4000–8000 kbps
+#   1080p@60fps:  6000–12000 kbps
+bitrate_kbps = 4000
+
+# Video encoder backend:
+#   x264  — software (works everywhere, highest CPU usage)
+#   vaapi — Intel/AMD GPU hardware encode (requires vainfo to show h264_enc)
+#   nvenc — NVIDIA GPU hardware encode (requires nvidia-smi + nvh264enc)
+encoder = "x264"
+
+# IDR keyframe interval in frames.  0 = auto (2 × framerate).
+# Shorter intervals improve seek/join latency but increase bitrate.
+keyframe_interval = 0
+
+
+# ── Audio ─────────────────────────────────────────────────────────────────────
+[audio]
+
+# Output channels: 1 (mono) or 2 (stereo).
+channels = 2
+
+# Opus encoder sample rate.  Must be 8000, 12000, 16000, 24000, or 48000.
+# 48000 Hz is the WebRTC standard and recommended for all use cases.
+sample_rate = 48000
+
+# Opus bitrate in bits per second (bps).
+# Recommended: 64000 (voice), 128000 (music/broadcast quality)
+bitrate_bps = 128000
+
+
+# ── Retry / reconnect ─────────────────────────────────────────────────────────
+[retry]
+
+# Maximum number of reconnect attempts.  0 = unlimited.
+max_attempts = 0
+
+# Seconds to wait before the first reconnect attempt.
+initial_delay_s = 2.0
+
+# Maximum wait between reconnect attempts (caps exponential back-off).
+max_delay_s = 60.0
+
+# Multiplier applied to the delay on each consecutive failure.
+# With initial=2 and factor=2: delays are 2s, 4s, 8s, 16s… capped at max_delay_s.
+backoff_factor = 2.0
+
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+[logging]
+
+# Python log level: DEBUG | INFO | WARNING | ERROR
+level = "INFO"
+
+# GStreamer debug level (0 = silent, 9 = verbose trace).
+# Useful values:
+#   2 — errors only
+#   3 — warnings
+#   4 — info
+#   5 — debug (shows element negotiation)
+# Override at runtime: GST_DEBUG=whipclientsink:5,ndisrc:4
+gst_debug = "2"

@@ -1,0 +1,96 @@
+# =============================================================================
+# /etc/systemd/system/ndi-to-whip.service
+#
+# Install:
+#   sudo cp ndi-to-whip.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now ndi-to-whip
+#
+# Logs:
+#   journalctl -u ndi-to-whip -f
+#   journalctl -u ndi-to-whip --since "1 hour ago"
+# =============================================================================
+
+[Unit]
+Description=NDI to WHIP WebRTC Bridge
+Documentation=https://github.com/yourorg/ndi_to_whip
+After=network-online.target
+Wants=network-online.target
+# If using a local WHIP server (e.g. Janus, MediaMTX), add:
+# After=janus.service
+# BindsTo=janus.service
+
+[Service]
+# ── Identity ──────────────────────────────────────────────────────────────────
+User=ndi-whip
+Group=ndi-whip
+# Supplementary groups for hardware encoder access
+SupplementaryGroups=video audio
+
+# ── Command ───────────────────────────────────────────────────────────────────
+ExecStart=/opt/ndi_to_whip/venv/bin/python \
+    /opt/ndi_to_whip/ndi_to_whip.py \
+    --config /etc/ndi_to_whip/config.toml
+
+# ── Restart policy ────────────────────────────────────────────────────────────
+# Restart on any non-zero exit.  The Python script handles its own retry loop;
+# systemd provides the outer safety net for unexpected crashes.
+Restart=on-failure
+RestartSec=5s
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+# ── Environment ───────────────────────────────────────────────────────────────
+# NDI SDK shared library
+Environment="LD_LIBRARY_PATH=/usr/local/lib"
+# Custom GStreamer plugins (NDI + WebRTC/WHIP)
+Environment="GST_PLUGIN_PATH=/usr/local/lib/gstreamer-1.0"
+# GStreamer debug level — override here or in config.toml [logging] gst_debug
+# Environment="GST_DEBUG=whipclientsink:4,ndisrc:3,ndidemux:3"
+# NDI SDK root
+Environment="NDI_SDK_DIR=/usr/local"
+# Disable GStreamer registry update lock contention between restarts
+Environment="GST_REGISTRY_FORK=no"
+
+# ── Security hardening ────────────────────────────────────────────────────────
+# Allow read of config; restrict write to log dir only
+ReadWritePaths=/var/log/ndi_to_whip
+ReadOnlyPaths=/etc/ndi_to_whip
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+# Hardware encoder access requires /dev/dri; remove if using software x264
+DeviceAllow=/dev/dri rw
+CapabilityBoundingSet=
+
+# ── Resource limits ───────────────────────────────────────────────────────────
+# Real-time priority — important for low-latency video/audio processing.
+# Requires CAP_SYS_NICE or a raised rlimit in /etc/security/limits.conf.
+# To enable: add "ndi-whip - nice -10" to /etc/security/limits.conf
+Nice=-10
+# Prevent the OOM killer from targeting this process
+OOMScoreAdjust=-100
+# Memory limit — tune to 2× your expected pipeline RSS
+MemoryMax=512M
+# CPU scheduling — use SCHED_RR with realtime priority if your kernel supports it
+# CPUSchedulingPolicy=rr
+# CPUSchedulingPriority=50
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+# Structured output goes to journald; optionally also to a file
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ndi-to-whip
+
+# Alternatively, log to a file (comment out the journal lines above):
+# StandardOutput=append:/var/log/ndi_to_whip/ndi_to_whip.log
+# StandardError=append:/var/log/ndi_to_whip/ndi_to_whip_err.log
+
+# ── Watchdog ──────────────────────────────────────────────────────────────────
+# systemd will restart the service if it does not ping the watchdog within 60s.
+# The Python script would need to call sd_notify for this to be useful.
+# WatchdogSec=60s
+
+[Install]
+WantedBy=multi-user.target
