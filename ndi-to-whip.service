@@ -64,7 +64,7 @@ ProtectHome=true
 NoNewPrivileges=true
 # Hardware encoder access requires /dev/dri; remove if using software x264
 DeviceAllow=/dev/dri rw
-CapabilityBoundingSet=
+# CapabilityBoundingSet=  # Removed: empty set blocks GStreamer plugin operations
 
 # ── Resource limits ───────────────────────────────────────────────────────────
 # Real-time priority — important for low-latency video/audio processing.
