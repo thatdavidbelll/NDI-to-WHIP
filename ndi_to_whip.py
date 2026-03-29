@@ -234,12 +234,12 @@ def build_pipeline_string(cfg: Config) -> str:
     Build the GStreamer pipeline string.
 
     Pipeline topology:
-      ndisrc → ndidemux ─┬─ [video path] → rtph264pay → whipclientsink
+      ndisrc → ndisrcdemux ─┬─ [video path] → rtph264pay → whipclientsink
                           └─ [audio path] → rtpopuspay ↗
 
-    ndisrc / ndidemux notes:
+    ndisrc / ndisrcdemux notes:
       The gst-plugins-rs NDI plugin (video/ndi/) outputs a raw NDI buffer
-      via ndisrc; ndidemux splits it into separate video/audio src pads.
+      via ndisrc; ndisrcdemux splits it into separate video/audio src pads.
       Pad names vary by plugin version — see --probe-pads flag.
     """
     enc_profile = ENCODER_PROFILES.get(cfg.video_encoder)
@@ -283,10 +283,10 @@ def build_pipeline_string(cfg: Config) -> str:
     # IMPORTANT: If your NDI plugin version exposes separate pads with different
     # names (e.g. video_0 / audio_0, or just unnamed request pads), adjust the
     # "demux.video" / "demux.audio" references below.
-    # Run:  gst-inspect-1.0 ndidemux  to see actual pad template names.
+    # Run:  gst-inspect-1.0 ndisrcdemux  to see actual pad template names.
     #
     # Alternative for plugins with ndivideosrc / ndiaudiosrc:
-    #   Replace the ndisrc+ndidemux block with:
+    #   Replace the ndisrc+ndisrcdemux block with:
     #     ndivideosrc ndi-name="..." ! ...
     #     ndiaudiosrc ndi-name="..." ! ...
     #
@@ -302,7 +302,7 @@ def build_pipeline_string(cfg: Config) -> str:
             ndi-name="{cfg.ndi_source_name}"
             connect-timeout={cfg.ndi_connect_timeout_ms}
             do-timestamp=true
-        ! ndidemux name=demux
+        ! ndisrcdemux name=demux
 
         demux.video
         ! queue name=vqueue
@@ -598,7 +598,7 @@ def parse_args() -> argparse.Namespace:
 
 def validate_elements() -> bool:
     required = [
-        "ndisrc", "ndidemux",
+        "ndisrc", "ndisrcdemux",
         "whipclientsink",
         "videoconvert", "videoscale", "videorate",
         "x264enc", "opusenc",

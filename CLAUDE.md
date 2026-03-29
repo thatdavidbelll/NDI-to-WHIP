@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project does
 
-Single-file Python application (`ndi_to_whip.py`) that bridges a named NDI source to a WHIP WebRTC ingest endpoint using a GStreamer pipeline. The pipeline is built as a string and launched via `Gst.parse_launch()`. Both the NDI plugin (`libgstndi.so`) and the WHIP client plugin (`libgstwebrtc.so`) are compiled from [`gst-plugins-rs`](https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs) — they are **not** the same-named files in Ubuntu's `gstreamer1.0-plugins-bad` package.
+Single-file Python application (`ndi_to_whip.py`) that bridges a named NDI source to a WHIP WebRTC ingest endpoint using a GStreamer pipeline. The pipeline is built as a string and launched via `Gst.parse_launch()`. Both the NDI plugin (`libgstndi.so`) and the WHIP client plugin (`libgstrswebrtc.so`) are compiled from [`gst-plugins-rs`](https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs) — they are **not** the same-named files in Ubuntu's `gstreamer1.0-plugins-bad` package.
 
 ## Running the application
 
@@ -49,7 +49,7 @@ All logic lives in `ndi_to_whip.py`. There are no other Python modules.
 
 **`ENCODER_PROFILES` dict** — maps encoder name (`x264`, `vaapi`, `nvenc`) to a tuple of the GStreamer encoder element string, caps filter string, and RTP payloader string. Adding a new encoder means adding an entry here and nowhere else.
 
-**`build_pipeline_string(cfg)`** — assembles the full GStreamer `parse_launch` string. The pipeline has two branches from `ndidemux` (video and audio) that both terminate at the same named `whipclientsink` element. If `ndidemux` pad names differ in a given plugin version, this is the only function to change.
+**`build_pipeline_string(cfg)`** — assembles the full GStreamer `parse_launch` string. The pipeline has two branches from `ndisrcdemux` (video and audio) that both terminate at the same named `whipclientsink` element. If `ndisrcdemux` pad names differ in a given plugin version, this is the only function to change.
 
 **`NdiToWhipBridge`** — manages the GStreamer lifecycle:
 - `_create_pipeline()` calls `Gst.parse_launch()` and raises with a human-readable hint on failure
@@ -63,7 +63,7 @@ All logic lives in `ndi_to_whip.py`. There are no other Python modules.
 
 ## Key constraints
 
-- `GST_PLUGIN_PATH` must point to `/usr/local/lib/gstreamer-1.0` so the `gst-plugins-rs` builds of `libgstndi.so` and `libgstwebrtc.so` load instead of the Ubuntu system versions.
-- The `ndidemux` pad names (`demux.video` / `demux.audio`) vary between plugin builds. If the pipeline fails to link, run `gst-inspect-1.0 ndidemux` on the target system to find the actual pad template names.
-- `whipclientsink` and `webrtcbin` are different elements from different builds of `libgstwebrtc.so`. Only the `gst-plugins-rs` build provides `whipclientsink`.
+- `GST_PLUGIN_PATH` must point to `/usr/local/lib/gstreamer-1.0` so the `gst-plugins-rs` builds of `libgstndi.so` and `libgstrswebrtc.so` load instead of the Ubuntu system versions.
+- The `ndisrcdemux` pad names (`demux.video` / `demux.audio`) vary between plugin builds. If the pipeline fails to link, run `gst-inspect-1.0 ndisrcdemux` on the target system to find the actual pad template names.
+- `whipclientsink` and `webrtcbin` are different elements from different builds of `libgstrswebrtc.so`. Only the `gst-plugins-rs` build provides `whipclientsink`.
 - Python's `tomllib` is stdlib in 3.11+. On 3.10 and earlier the venv must have `tomli` installed.
