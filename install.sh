@@ -20,7 +20,7 @@ die()   { echo -e "${RED}[FAIL]${NC}  $*" >&2; exit 1; }
 INSTALL_DIR="/opt/ndi_to_whip"
 GST_PLUGIN_DIR="/usr/local/lib/gstreamer-1.0"
 NDI_SDK_SYMLINK_DIR="/usr/local"   # where NDI SDK installs its headers + libs
-GST_PLUGINS_RS_REV="gstreamer-1.22.12"   # git tag / branch to build
+GST_PLUGINS_RS_REV="gstreamer-1.24.13"   # git tag / branch to build
 PYTHON_VENV="${INSTALL_DIR}/venv"
 SERVICE_USER="ndi-whip"
 LOG_DIR="/var/log/ndi_to_whip"

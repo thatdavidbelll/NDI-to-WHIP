@@ -173,7 +173,7 @@ This builds `libgstndi.so` (NDI source/sink) and `libgstwebrtc.so` (WHIP client)
 from the `gst-plugins-rs` Rust workspace.
 
 ```bash
-git clone --branch gstreamer-1.22.12 --depth 1 \
+git clone --branch gstreamer-1.24.13 --depth 1 \
   https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs.git
 cd gst-plugins-rs
 
