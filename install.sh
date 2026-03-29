@@ -16,6 +16,9 @@ warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 ok()    { echo -e "${GREEN}[ OK ]${NC}  $*"; }
 die()   { echo -e "${RED}[FAIL]${NC}  $*" >&2; exit 1; }
 
+# ── Script location (must be resolved before any cd) ─────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # ── Config ────────────────────────────────────────────────────────────────────
 INSTALL_DIR="/opt/ndi_to_whip"
 GST_PLUGIN_DIR="/usr/local/lib/gstreamer-1.0"
@@ -255,8 +258,7 @@ done
 
 mkdir -p "${INSTALL_DIR}" "${LOG_DIR}" "${CONFIG_DIR}"
 
-# Copy application files (relative to this script's directory)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Copy application files
 cp "${SCRIPT_DIR}/ndi_to_whip.py"  "${INSTALL_DIR}/"
 chmod +x "${INSTALL_DIR}/ndi_to_whip.py"
 
