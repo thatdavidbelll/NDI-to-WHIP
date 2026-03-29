@@ -347,38 +347,26 @@ def build_pipeline_string(cfg: Config) -> str:
 
 def probe_ndi_sources(timeout_s: float = 5.0) -> list[str]:
     """
-    Use ndisrc in a short-lived pipeline to enumerate visible NDI sources.
-    Returns a list of source name strings.
-
-    Note: The gst-plugins-rs NDI plugin uses the NDI SDK's find API internally.
-    We launch a minimal pipeline and read the 'ndi-source-infos' property.
+    Enumerate visible NDI sources using the ndideviceprovider GStreamer
+    device provider (available in gst-plugins-rs >= 1.24).
+    Returns a list of source display-name strings.
     """
     sources: list[str] = []
 
     try:
-        # ndisrc exposes a 'ndi-source-infos' property listing discovered sources
-        src = Gst.ElementFactory.make("ndisrc", "probe_src")
-        if src is None:
-            log.error("probe_failed", reason="ndisrc element not available")
+        factory = Gst.DeviceProviderFactory.find("ndideviceprovider")
+        if factory is None:
+            log.error("probe_failed", reason="ndideviceprovider not available")
             return sources
 
-        pipeline = Gst.Pipeline.new("probe")
-        pipeline.add(src)
-
-        # Bring to PAUSED so the element can start discovering
-        pipeline.set_state(Gst.State.PAUSED)
+        provider = factory.get()
+        provider.start()
         time.sleep(timeout_s)
-
-        # Read source list property
-        infos = src.get_property("ndi-source-infos")
-        pipeline.set_state(Gst.State.NULL)
-
-        if infos:
-            for entry in infos:
-                name = entry.get("ndi-name", "")
-                ip   = entry.get("ip-address", "")
-                if name:
-                    sources.append(f"{name}  [{ip}]")
+        for device in provider.get_devices():
+            name = device.get_display_name()
+            if name:
+                sources.append(name)
+        provider.stop()
     except Exception as exc:
         log.warning("probe_error", exc=str(exc))
 
