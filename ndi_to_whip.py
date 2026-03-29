@@ -9,7 +9,7 @@ retry/reconnect logic, and graceful shutdown.
 Requirements:
   - GStreamer 1.20+
   - gst-plugin-ndi   (libgstndi.so   from gst-plugins-rs)
-  - gst-plugin-webrtc (libgstwebrtc.so from gst-plugins-rs, provides whipclientsink)
+  - gst-plugin-webrtc (libgstrswebrtc.so from gst-plugins-rs, provides whipclientsink)
   - PyGObject (gi), tomli/tomllib
 
 Usage:
@@ -271,8 +271,8 @@ def build_pipeline_string(cfg: Config) -> str:
         f",layout=interleaved"
     )
 
-    # Conditional auth-token property
-    auth_prop = f'auth-token="{cfg.auth_token}"' if cfg.auth_token else ""
+    # Conditional auth-token property (child property of signaller in 1.24+)
+    auth_prop = f'signaller::auth-token="{cfg.auth_token}"' if cfg.auth_token else ""
 
     # Conditional STUN/TURN
     stun_prop = f'stun-server="{cfg.stun_server}"' if cfg.stun_server else ""
@@ -292,7 +292,7 @@ def build_pipeline_string(cfg: Config) -> str:
     #
     pipeline = f"""
         whipclientsink name=whip
-            sig-server-url="{cfg.whip_url}"
+            signaller::whip-endpoint="{cfg.whip_url}"
             {auth_prop}
             {stun_prop}
             {turn_prop}
@@ -316,7 +316,6 @@ def build_pipeline_string(cfg: Config) -> str:
         ! {video_caps}
         ! {encoder_str}
         ! {encoder_caps}
-        ! {rtp_pay_str}
         ! whip.
 
         demux.audio
@@ -333,7 +332,6 @@ def build_pipeline_string(cfg: Config) -> str:
             audio-type=restricted-lowdelay
             bandwidth=fullband
             frame-size=10
-        ! rtpopuspay pt=111
         ! whip.
     """
 
