@@ -51,14 +51,16 @@ Environment="GST_PLUGIN_PATH=/usr/local/lib/gstreamer-1.0"
 Environment="NDI_SDK_DIR=/usr/local"
 # Disable GStreamer registry update lock contention between restarts
 Environment="GST_REGISTRY_FORK=no"
+# GStreamer registry cache in a writable system path (required with ProtectSystem=strict)
+Environment="XDG_CACHE_HOME=/var/cache"
 
 # ── Security hardening ────────────────────────────────────────────────────────
 # Allow read of config; restrict write to log dir only
-ReadWritePaths=/var/log/ndi_to_whip
+ReadWritePaths=/var/log/ndi_to_whip /var/cache/gstreamer-1.0
 ReadOnlyPaths=/etc/ndi_to_whip
 ProtectSystem=strict
 ProtectHome=true
-PrivateTmp=true
+# PrivateTmp=true  # Disabled: NDI SDK uses /tmp for IPC/shared memory
 NoNewPrivileges=true
 # Hardware encoder access requires /dev/dri; remove if using software x264
 DeviceAllow=/dev/dri rw
